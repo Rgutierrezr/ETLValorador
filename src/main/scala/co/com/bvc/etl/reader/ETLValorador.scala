@@ -13,15 +13,14 @@ import play.api.libs.json.Json
 import scala.io.Source
 
 
-object ETLValorador {
+class ETLValorador extends Serializable{
 
-  val logger = org.apache.log4j.LogManager.getLogger("ETLValorador")
+  @transient lazy val logger = org.apache.log4j.LogManager.getLogger("ETLValorador")
 
   case class Contract(seccode: String, maturityDate: String, underId: String, status: String)
 
   def retrieveInputs(sc: SparkContext, sqlContext: SQLContext, prop: Properties): Unit = {
 
-    var JsonStringSend = ""
     var JsonSupStringSend = ""
     var JsonSupVStringSend = ""
     var JsonCanStringSend = ""
@@ -53,9 +52,9 @@ object ETLValorador {
         val jsonContracts = df.toJSON
         val arrayCanastaLength = jsonContracts.collect().length.toString()
         val insumoCanastaHeader = df.columns.toList
-        val jsonTransCanasta = transformarJsonDF(df, "5", arrayCanastaLength, insumoCanastaHeader)
+        val jsonTransCanasta = jsonDFToJsonValorador(df, "5", arrayCanastaLength, insumoCanastaHeader)
 
-        logger.info("Canasta:\n"+jsonTransCanasta)
+        logger.info("Canasta:\n" + jsonTransCanasta)
 
         connection.close()
       } catch {
@@ -85,16 +84,16 @@ object ETLValorador {
       val jsonIBR = ibrDiaria.toJSON
       val arrayIBRLength = jsonIBR.collect().length.toString()
       val insumoIBRHeader = ibrDiaria.columns.toList
-      val jsonTransIBR = transformarJsonDF(ibrDiaria, "2", arrayIBRLength, insumoIBRHeader)
-      logger.info("IBR:\n"+jsonTransIBR)
-      KafkaProducer.sendMessage(topic, key, "Message")
+      val jsonIBRValorador = jsonDFToJsonValorador(ibrDiaria, "2", arrayIBRLength, insumoIBRHeader)
+      logger.info("IBR:\n" + jsonIBRValorador)
+      KafkaProducer.sendMessage(topic, key, jsonIBRValorador)
     }
 
-    def transformarJsonDF(arrayInsumo: DataFrame, idInsumo: String, lengthArray: String, listHeader: List[String]): String = {
+    def jsonDFToJsonValorador(arrayInsumo: DataFrame, idInsumo: String, lengthArray: String, listHeader: List[String]): String = {
       var jsonArray = new JsArray()
       var contador = 0;
       val arrayHeader = searchIdPropiedades(idInsumo)
-      for (objIBR <- arrayInsumo) {
+      val r = for (objIBR <- arrayInsumo.collect()) {
         contador = contador + 1
         for (i <- 0 to (listHeader.length - 1)) {
           val objIBRJson = Json.obj(
@@ -105,13 +104,16 @@ object ETLValorador {
             "value" -> objIBR.get(i).toString().trim())
           jsonArray = jsonArray.:+(objIBRJson)
         }
-
         if (contador.toString().equals(lengthArray)) {
-          JsonStringSend = jsonArray.toString()
-        }
-      }
-      JsonStringSend
+        //  logger.info("Insumo en formato Valorador  contador MAX= " + jsonArray)
 
+        }
+        logger.info("Contador: = " + contador)
+      }
+      logger.info("Insumo en formato Valorador loop  out = " + jsonArray)
+      logger.info("Contador loop out: = " + contador)
+      logger.info("r loop out: = " + r)
+      jsonArray.toString()
     }
 
 
@@ -230,11 +232,12 @@ object ETLValorador {
       arrayIdPropiedades
 
     }
-
-
   }
+}
 
+object ETL {
   def main(args: Array[String]): Unit = {
+    val logger = org.apache.log4j.LogManager.getLogger("ETLValorador")
     logger.info("Running ETLValorador")
     val prop = new Properties()
     prop.load(new FileInputStream("etl.properties"))
@@ -243,6 +246,6 @@ object ETLValorador {
     val conf = new SparkConf().setAppName(appName).setMaster(master)
     val sc = new SparkContext(conf)
     val sqlContext = new SQLContext(sc)
-    ETLValorador.retrieveInputs(sc, sqlContext, prop)
+    new ETLValorador().retrieveInputs(sc, sqlContext, prop)
   }
 }
