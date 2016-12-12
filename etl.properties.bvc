@@ -1,0 +1,13 @@
+spark.appName = ETLValorador
+spark.master = local
+
+nasdaq.driver = com.informix.jdbc.IfxDriver
+nasdaq.url = jdbc:informix-sqli://10.240.252.106:20004/bvc_produc88:INFORMIXSERVER=homte_sox
+nasdaq.user = informix
+nasdaq.password = DBINFO88
+nasdaq.qContratos = SELECT Security.SecCode, (SELECT Security.SecCode FROM security WHERE Security.SecurityId=Instr_Option.UnderPhySecId) AS underId, TO_CHAR(Security.maturitydate), Security.Status FROM informix.security, informix.instr, informix.sec_option, informix.instr_option WHERE Security.SecClassId=Instr.SecClassid AND Security.SecurityId=Sec_Option.SecurityId AND Security.InstrId=Instr.InstrId AND Instr.InstrId=Instr_Option.InstrId AND Instr.SecClassid=Instr_Option.SecClassId AND Instr.SecClassid<> 'COMM' AND Instr.SecClassid<> 'STGY' AND security.status<> 'D' UNION SELECT Security.SecCode, (SELECT Security.SecCode FROM security WHERE Security.SecurityId=Instr_Option.UnderPhySecId) AS underId, TO_CHAR(Security.maturitydate), Security.Status FROM informix.security, informix.instr, informix.sec_option, informix.instr_option WHERE Security.SecClassId=Instr.SecClassid AND Security.SecurityId=Sec_Option.SecurityId AND Security.InstrId=Instr.InstrId AND Instr.InstrId=Instr_Option.InstrId AND Instr.SecClassid=Instr_Option.SecClassId AND Instr.SecClassid<> 'COMM' AND Instr.SecClassid<> 'STGY' AND security.status='D' AND year(security.timestamp)=year(current) AND month(security.timestamp)=month(current) AND day(security.timestamp)=day(current)
+
+inputs.folder=inputs
+inputs.filename.ibrdiaria=SwapCCIBRDiaria.csv
+
+
