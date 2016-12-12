@@ -1,0 +1,6 @@
+cp -rvf /home/mlamprea/IdeaProjects/ETLValorador/target/scala-2.10/etlvalorador_2.10-1.0.jar /EnvDev/spark.apps/jars
+cp -rvf /home/mlamprea/IdeaProjects/ETLValorador/etl.properties /EnvDev/spark.apps
+cp -rvf /home/mlamprea/IdeaProjects/ETLValorador/kafka.properties /EnvDev/spark.apps
+spark-submit --jars ./jars/ifxjdbc.jar,./jars/spark-csv_2.10-1.5.0.jar,./jars/commons-csv-1.1.jar,jars/play-json_2.10-2.4.8.jar,./jars/kafka-clients-0.9.0.1.jar --class co.com.bvc.etl.reader.ETL --master local[1] ./jars/etlvalorador_2.10-1.0.jar
+
+
